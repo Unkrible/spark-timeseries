@@ -14,15 +14,15 @@ class MathUtilsTest extends FunSuite with BeforeAndAfterEach {
   }
 
   test("testSum") {
-    assert(MathUtils.sum(array) == 15)
+    assert(ArrayUtils.sum(array) == 15)
   }
 
   test("testMean") {
-    assert(MathUtils.mean(array) == 3)
+    assert(ArrayUtils.mean(array) == 3)
   }
 
   test("testStd") {
-    assert(MathUtils.std(array) == 2.0)
+    assert(ArrayUtils.std(array) == 2.0)
   }
 
 }
