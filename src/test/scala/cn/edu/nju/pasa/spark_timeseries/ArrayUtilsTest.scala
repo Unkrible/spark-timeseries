@@ -65,4 +65,10 @@ class ArrayUtilsTest extends FunSuite with BeforeAndAfterEach {
     assert(result sameElements Array(1, 1, 1, 1, 1))
   }
 
+  test("testSeqLengthWhere") {
+    val testCase = Array(true, false, false, true, true, true, false, true, true, true, true)
+    val result = ArrayUtils.seqLengthWhere(testCase)
+    assert(result.toSet == Set(1, 3, 4))
+  }
+
 }

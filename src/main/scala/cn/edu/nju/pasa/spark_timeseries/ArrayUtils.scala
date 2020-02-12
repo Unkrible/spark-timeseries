@@ -18,31 +18,35 @@ object ArrayUtils {
     else {
       val xEnum = x.zipWithIndex
       xEnum.map(ele => {
-        val (value, index) = ele
-        xEnum.foldLeft(index)((cur, ele) => {
-          if (ele._1 && ele._2 == cur - 1) {
-            ele._2
-          } else {
-            cur
-          }
-        })
-      }).groupBy(_).map(_._2.length.toDouble).toArray
+        if (ele._1) {
+          xEnum.foldLeft(ele._2)((cur, ele) => {
+            if (ele._1 && ele._2 == cur + 1) {
+              ele._2
+            } else {
+              cur
+            }
+          })
+        } else {
+          -1
+        }
+      }).filter(_ >= 0).groupBy(each => each).map(_._2.length.toDouble).toArray
     }
   }
 
   def std(x: Array[Double], mean: Option[Double] = None): Double = {
     val mean_ = mean.getOrElse(ArrayUtils.mean(x))
-    ArrayUtils.mean(x.map(e => math.pow(e - mean_, 2)))
+    sqrt(ArrayUtils.mean(x.map(e => math.pow(e - mean_, 2))))
   }
 
   def roll(x: Array[Double], shift: Int): Array[Double] = {
-    val idx = shift % x.length
+    // to avoid negative shift
+    val idx = (shift % x.length + x.length) % x.length
     x.takeRight(x.length - idx) ++ x.take(idx)
   }
 
   def diff(x: Array[Double], derivative: Int = 1): Array[Double] = {
-    val shift = new Array[Double](x.length - derivative) ++ x.take(derivative)
-    x.zip(shift).map(each => each._2 - each._1)
+    val shift = new Array[Double](derivative) ++ x.take(x.length - derivative)
+    x.zip(shift).map(each => each._1 - each._2)
   }
 
   def normalize(x: Array[Double]): Array[Double] = {
@@ -52,7 +56,6 @@ object ArrayUtils {
       new Array[Double](x.length)
     else
       x.map(each => (each - mean_) / std_)
-
   }
 
   def dot(lhs: Array[Double], rhs: Array[Double]): Double = {
@@ -60,7 +63,7 @@ object ArrayUtils {
   }
 
   def sqrt(x: Double): Double = {
-    sqrt(x)
+    math.sqrt(x)
   }
 
   def sqrt(x: Array[Double]): Array[Double] = {
