@@ -6,23 +6,13 @@ import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.apache.spark.storage.StorageLevel
 
 class TimeSeriesFrame(val rawDataDF: DataFrame, val ss: SparkSession) {
-  private val timeSeriesDF = TimeSeriesFrame.getTimeSeriesDF(rawDataDF, ss)
+  private var timeSeriesDF = makeTimeSeriesDF(rawDataDF)
 
-  def getTimeSeriesDF(): DataFrame = {
+  def getTimeSeriesDF: DataFrame = {
     timeSeriesDF
   }
 
-  def getTimeSeriesByFeatureName(name: String): Vector = {
-    val vec = timeSeriesDF.where("feature = '" + name + "'")
-      .select("vector").collect()
-      .last.getAs[Vector](0)
-
-    vec
-  }
-}
-
-object TimeSeriesFrame {
-  def getTimeSeriesDF(rawDataDF: DataFrame, ss:SparkSession): DataFrame = {
+  def makeTimeSeriesDF(rawDataDF: DataFrame): DataFrame = {
     val timeseriesRdd = rawDataDF.rdd
       .map(x => (x.getString(1), List((x.getLong(0), x.getDouble(2)))))
       .reduceByKey((x, y) => x ++ y)
@@ -30,8 +20,43 @@ object TimeSeriesFrame {
       .map(x => (x._1, Vectors.dense(x._2.map(_._2).toArray)))
 
     val timeseriesDF = ss.createDataFrame(timeseriesRdd).toDF("feature", "vector")
-        .persist(StorageLevel.MEMORY_AND_DISK_SER)
+      .persist(StorageLevel.MEMORY_AND_DISK_SER)
 
     timeseriesDF
   }
+
+  def getFeaturesNames: Array[String] = {
+    val names = timeSeriesDF.select("feature").collect().map(_.getString(0))
+
+    names
+  }
+
+  def addTimeSeriesDF(df: DataFrame): Unit = {
+    timeSeriesDF = timeSeriesDF.union(df).persist(StorageLevel.MEMORY_AND_DISK_SER)
+  }
+
+  def getTimeSeriesVecByFeatureName(name: String): Vector = {
+    val vec = timeSeriesDF.where("feature = '" + name + "'")
+      .select("vector").collect()
+      .last.getAs[Vector](0)
+
+    vec
+  }
+
+  def getTimeSeriesDfByFeature(fea: Feature): DataFrame = {
+    val name = fea.toString
+    val df = timeSeriesDF.where("feature = '" + name + "'")
+      .select("vector")
+
+    df
+  }
+
+  def getTimeSeriesDfByFeatures(feas: Array[Feature]): DataFrame = {
+    val feaNames = feas.map(_.toString)
+
+    val df = timeSeriesDF.filter(x => feaNames.contains(x.getString(0))).select("vector")
+
+    df
+  }
 }
+

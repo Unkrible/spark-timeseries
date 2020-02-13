@@ -1,8 +1,28 @@
 package cn.edu.nju.pasa.spark_timeseries
 
-import org.apache.spark.mllib.linalg.{Vector, Vectors}
+import org.apache.spark.ml.linalg.{Vector, Vectors}
 
 object TimeSeriesUtils {
+  private val opList = Array(
+    "roll",
+    "diff",
+    "aggregateOnChunks",
+    "cidCE",
+    "meanChange",
+    "meanSecondDerivativeCentral",
+    "absoluteSumOfChanges",
+    "longestStrikeAboveMean",
+    "timeReversalAsymmetryStatistic",
+    "c3"
+  )
+
+  def getOpList: Array[String] = opList
+
+  def doOp(x: Vector, opName: String): Vector = {
+    // TODO do operation by operation name
+
+    x
+  }
 
   def roll(x: Vector, shift: Int): Vector = {
     Vectors.dense(ArrayUtils.roll(x.toArray, shift))

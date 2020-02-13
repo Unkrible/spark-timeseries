@@ -5,7 +5,7 @@ import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.types.{FloatType, IntegerType, StringType, StructField}
 import org.scalatest.{BeforeAndAfterAll, FunSuite}
 
-class TestTimeSeriesFrame extends FunSuite with BeforeAndAfterAll {
+class TimeSeriesFrameTest extends FunSuite with BeforeAndAfterAll {
   private var ss:SparkSession = _
 
 
@@ -39,7 +39,7 @@ class TestTimeSeriesFrame extends FunSuite with BeforeAndAfterAll {
 
     val tsf = new TimeSeriesFrame(rawDataDF, ss)
 
-    assert(tsf.getTimeSeriesDF().count() == 3)
-    assert(tsf.getTimeSeriesByFeatureName("A") == Vectors.dense(1.2, 1.2, 12.2, 4.2))
+    assert(tsf.getTimeSeriesDF.count() == 3)
+    assert(tsf.getTimeSeriesVecByFeatureName("A") == Vectors.dense(1.2, 1.2, 12.2, 4.2))
   }
 }

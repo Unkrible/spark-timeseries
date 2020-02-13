@@ -1,6 +1,6 @@
 package cn.edu.nju.pasa.spark_timeseries
 
-import org.apache.spark.mllib.linalg.Vectors
+import org.apache.spark.ml.linalg.Vectors
 import org.scalatest.{BeforeAndAfterEach, FunSuite}
 
 class TimeSeriesUtilsTest extends FunSuite with BeforeAndAfterEach {
