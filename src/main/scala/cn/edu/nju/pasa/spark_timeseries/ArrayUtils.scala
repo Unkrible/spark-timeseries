@@ -39,7 +39,7 @@ object ArrayUtils {
   }
 
   def roll(x: Array[Double], shift: Int): Array[Double] = {
-    // to avoid negative shift
+    // avoid negative shift
     val idx = (shift % x.length + x.length) % x.length
     x.takeRight(x.length - idx) ++ x.take(idx)
   }

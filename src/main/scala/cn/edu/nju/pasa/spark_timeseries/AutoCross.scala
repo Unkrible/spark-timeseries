@@ -7,8 +7,8 @@ import org.apache.spark.rdd.RDD
 class AutoCross(val ss: SparkSession, val timeSeriesDF: TimeSeriesFrame) {
   val featureSets = collection.mutable.Set.empty[Feature]
 
-  def getFeatureset(maxFeatures: Int) = {
-    val features = timeSeriesDF.getFeaturesNames.map(new Feature(_))
+  def getFeatureSet(maxFeatures: Int) = {
+    val features: Array[Feature] = timeSeriesDF.getFeaturesNames.map(new Feature(_))
     val ops = TimeSeriesUtils.getOpList
     var candidateFeatures = features
 
@@ -16,7 +16,7 @@ class AutoCross(val ss: SparkSession, val timeSeriesDF: TimeSeriesFrame) {
     featureSets.clear()
     features.foreach(featureSets.add)
 
-    for (i <- 1 to maxFeatures) {
+    for (_ <- 1 to maxFeatures) {
       // generate candidates
       val lastDF = timeSeriesDF.getTimeSeriesDfByFeatures(candidateFeatures)
       val newFeaWithVec = lastDF.rdd.flatMap { r =>
@@ -27,7 +27,7 @@ class AutoCross(val ss: SparkSession, val timeSeriesDF: TimeSeriesFrame) {
 
       // get candidates
       val candidates = newFeaWithVec.map(_._1).collect()
-      // add new df to timeseries df
+      // add new df to time series df
       val tempRdd = newFeaWithVec.map(x => (x._1.toString, x._2))
       val df = ss.createDataFrame(tempRdd).toDF("feature", "vector")
       timeSeriesDF.addTimeSeriesDF(df)
@@ -57,7 +57,7 @@ class AutoCross(val ss: SparkSession, val timeSeriesDF: TimeSeriesFrame) {
       (f, scala.util.Random.nextInt(100))
     }.sortBy(-_._2)
 
-    // get top k fea
+    // get top k feature
     var topk = k
     if (k > feaWithScores.length) {
       topk = feaWithScores.length

@@ -12,25 +12,41 @@ class TimeSeriesFrame(val rawDataDF: DataFrame, val ss: SparkSession) {
     timeSeriesDF
   }
 
+  /***
+    * Translate raw data to column-based data frame
+    * @param rawDataDF (0: datetime, 1: key, 2: value)
+    * @return column-based data
+    */
   def makeTimeSeriesDF(rawDataDF: DataFrame): DataFrame = {
+    // original data
+    // (0: Datetime, 1: Key, 2: Value)
     val timeseriesRdd = rawDataDF.rdd
       .map(x => (x.getString(1), List((x.getLong(0), x.getDouble(2)))))
       .reduceByKey((x, y) => x ++ y)
       .map(x => (x._1, x._2.sortBy(_._1)))
       .map(x => (x._1, Vectors.dense(x._2.map(_._2).toArray)))
 
+    // column-based data
     val timeseriesDF = ss.createDataFrame(timeseriesRdd).toDF("feature", "vector")
       .persist(StorageLevel.MEMORY_AND_DISK_SER)
 
     timeseriesDF
   }
 
+  /***
+    * Get all feature names
+    * @return list of feature names
+    */
   def getFeaturesNames: Array[String] = {
     val names = timeSeriesDF.select("feature").collect().map(_.getString(0))
 
     names
   }
 
+  /***
+    * Union df with time series data frame
+    * @param df data frame to union
+    */
   def addTimeSeriesDF(df: DataFrame): Unit = {
     timeSeriesDF = timeSeriesDF.union(df).persist(StorageLevel.MEMORY_AND_DISK_SER)
   }

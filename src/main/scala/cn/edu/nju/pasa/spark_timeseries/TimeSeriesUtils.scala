@@ -24,7 +24,7 @@ object TimeSeriesUtils {
     x
   }
 
-  def roll(x: Vector, shift: Int): Vector = {
+  def roll(x: Vector, shift: Int=1): Vector = {
     Vectors.dense(ArrayUtils.roll(x.toArray, shift))
   }
 
