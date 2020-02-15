@@ -7,7 +7,7 @@ import org.apache.spark.rdd.RDD
 class AutoCross(val ss: SparkSession, val timeSeriesDF: TimeSeriesFrame) {
   val featureSets = collection.mutable.Set.empty[Feature]
 
-  def getFeatureSet(maxFeatures: Int) = {
+  def getFeatureSet(maxFeatures: Int): Unit = {
     val features: Array[Feature] = timeSeriesDF.getFeaturesNames.map(new Feature(_))
     val ops = TimeSeriesUtils.getOpList
     var candidateFeatures = features
@@ -43,7 +43,7 @@ class AutoCross(val ss: SparkSession, val timeSeriesDF: TimeSeriesFrame) {
     val newOps = fea.ops ++ List(opName)
     val newFea = new Feature(fea.feature, newOps)
 
-    (newFea, TimeSeriesUtils.doOp(x, opName))
+    (newFea, TimeSeriesUtils.doOp(opName, x))
   }
 
   private def evaluateCandidates(candidates: Array[Feature], k: Int=1): Array[Feature] = {

@@ -31,4 +31,8 @@ class TimeSeriesUtilsTest extends FunSuite with BeforeAndAfterEach {
     res.toArray.foreach(println)
   }
 
+  test("testDoOp") {
+    val res = TimeSeriesUtils.doOp("roll", vec)
+    print(res.toArray)
+  }
 }

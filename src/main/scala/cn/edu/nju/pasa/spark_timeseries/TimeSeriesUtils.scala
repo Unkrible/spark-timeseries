@@ -16,15 +16,27 @@ object TimeSeriesUtils {
     "c3"
   )
 
+  private val opMap = TimeSeriesUtils.getClass.getMethods
+    .filter(!_.getName.contains("default"))
+    .map(method => (method.getName, method)).toMap
+
+  private val opDefaultArgs = TimeSeriesUtils.getClass.getMethods
+    .filter(_.getName.contains("default"))
+    .map(method => (method.getName.split("\\$").head, method.getName.split("\\$").last, method))
+    .groupBy(_._1).map(ele =>
+      (ele._1, ele._2.sortBy(_._2.toInt).map(_._3).map(_.invoke(TimeSeriesUtils)))
+    )
+
   def getOpList: Array[String] = opList
 
-  def doOp(x: Vector, opName: String): Vector = {
-    // TODO do operation by operation name
-
-    x
+  def doOp(opName: String, x: Vector, args: AnyRef*): Vector = {
+    val allArgs = Array(x) ++
+      opDefaultArgs.getOrElse(opName, Array())
+          .zipWithIndex.map(ele => if (ele._2 < args.length) args(ele._2) else ele._1)
+    opMap(opName).invoke(TimeSeriesUtils, allArgs: _*).asInstanceOf[Vector]
   }
 
-  def roll(x: Vector, shift: Int=1): Vector = {
+  def roll(x: Vector, shift: Int=3): Vector = {
     Vectors.dense(ArrayUtils.roll(x.toArray, shift))
   }
 
