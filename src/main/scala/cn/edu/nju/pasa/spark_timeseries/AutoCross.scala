@@ -2,7 +2,7 @@ package cn.edu.nju.pasa.spark_timeseries
 
 import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.apache.spark.ml.linalg.Vector
-import org.apache.spark.rdd.RDD
+import org.apache.spark.ml.regression.LinearRegression
 
 class AutoCross(val ss: SparkSession, val timeSeriesDF: TimeSeriesFrame) {
   val featureSets = collection.mutable.Set.empty[Feature]
@@ -47,22 +47,23 @@ class AutoCross(val ss: SparkSession, val timeSeriesDF: TimeSeriesFrame) {
   }
 
   private def evaluateCandidates(candidates: Array[Feature], k: Int=1): Array[Feature] = {
-    val prevFeasDf = timeSeriesDF.getTimeSeriesDfByFeatures(featureSets.toArray)
+    val prevFeatDf = timeSeriesDF.getTimeSeriesDfByFeatures(featureSets.toArray)
+    val curFeatDef = candidates.map(timeSeriesDF.getTimeSeriesDfByFeature)
+    // TODO: union all current feature
+    val trainDF = prevFeatDf
 
-    val feaWithScores = candidates.map{f =>
-      val curFeaDf = timeSeriesDF.getTimeSeriesDfByFeature(f)
-      val trainDF = prevFeasDf.union(curFeaDf)
-      // TODO train and use val to evaluate
+    val lr = new LinearRegression()
+      .setRegParam(0.4)
 
-      (f, scala.util.Random.nextInt(100))
-    }.sortBy(-_._2)
+    val model = lr.fit(trainDF)
+    val featWithScores = trainDF.columns.zip(model.coefficients.toArray)
 
     // get top k feature
     var topk = k
-    if (k > feaWithScores.length) {
-      topk = feaWithScores.length
+    if (k > featWithScores.length) {
+      topk = featWithScores.length
     }
 
-    (0 until topk).toArray.map(feaWithScores(_)).map(_._1)
+    (0 until topk).toArray.map(featWithScores(_)).map(_._1)
   }
 }
