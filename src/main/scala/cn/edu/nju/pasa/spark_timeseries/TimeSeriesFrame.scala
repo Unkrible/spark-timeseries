@@ -67,6 +67,11 @@ class TimeSeriesFrame(val rawDataDF: DataFrame, val ss: SparkSession) {
     df
   }
 
+  /***
+    * Get column-based data frame
+    * @param feas names of feature needed
+    * @return column-based df
+    */
   def getTimeSeriesDfByFeatures(feas: Array[Feature]): DataFrame = {
     val feaNames = feas.map(_.toString)
 
