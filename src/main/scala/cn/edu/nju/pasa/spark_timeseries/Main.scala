@@ -27,6 +27,6 @@ object Main extends App {
     val tsFrame = new TimeSeriesFrame(df, ss)
     tsFrame.getTimeSeriesDF.show
     val autoCross = new AutoCross(ss, tsFrame)
-    autoCross.getFeatureSet(3)
+    autoCross.searchFeature(3)
   }
 }
