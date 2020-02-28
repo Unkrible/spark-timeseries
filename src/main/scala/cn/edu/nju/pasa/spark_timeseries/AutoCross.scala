@@ -11,6 +11,8 @@ class AutoCross(val ss: SparkSession, val timeSeriesDF: TimeSeriesFrame) {
     val features: Array[Feature] = timeSeriesDF.getFeaturesNames.map(new Feature(_))
     val ops = TimeSeriesUtils.getOpList
     var candidateFeatures = features
+    println("User the following ops:")
+    ops.foreach(print)
 
     // all single feature
     featureSets.clear()
@@ -23,9 +25,16 @@ class AutoCross(val ss: SparkSession, val timeSeriesDF: TimeSeriesFrame) {
         val fea = r.getAs[Feature](0)
         val vec = r.getAs[Vector](1)
         ops.map((fea, _, vec))
-      }.map(x => executeOp(x._1, x._2, x._3)).cache()
+      }.map(x =>
+        {
+          val (fea, opName, vec) = x
+          val newOps = fea.ops ++ List(opName)
+          val newFea = new Feature(fea.feature, newOps)
+          (newFea, TimeSeriesUtils.doOp(opName, vec))
+        }
+      ).cache()
 
-      // get candidates
+//     get candidates
       val candidates = newFeaWithVec.map(_._1).collect()
       // add new df to time series df
       val tempRdd = newFeaWithVec.map(x => (x._1.toString, x._2))
@@ -37,13 +46,6 @@ class AutoCross(val ss: SparkSession, val timeSeriesDF: TimeSeriesFrame) {
       chosenFea.foreach(featureSets.add)
       candidateFeatures = chosenFea
     }
-  }
-
-  private def executeOp(fea:Feature, opName: String, x:Vector): (Feature, Vector) = {
-    val newOps = fea.ops ++ List(opName)
-    val newFea = new Feature(fea.feature, newOps)
-
-    (newFea, TimeSeriesUtils.doOp(opName, x))
   }
 
   private def evaluateCandidates(candidates: Array[Feature], k: Int=1): Array[Feature] = {
@@ -59,11 +61,9 @@ class AutoCross(val ss: SparkSession, val timeSeriesDF: TimeSeriesFrame) {
     val featWithScores = trainDF.columns.zip(model.coefficients.toArray)
 
     // get top k feature
-    var topk = k
-    if (k > featWithScores.length) {
-      topk = featWithScores.length
-    }
+    val topk = if (k > featWithScores.length) featWithScores.length else k
 
     (0 until topk).toArray.map(featWithScores(_)).map(_._1)
+    new Array[Feature](1)
   }
 }
