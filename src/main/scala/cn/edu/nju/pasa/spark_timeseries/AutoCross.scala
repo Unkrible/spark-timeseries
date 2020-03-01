@@ -63,8 +63,8 @@ class AutoCross(val ss: SparkSession, val timeSeriesDF: TimeSeriesFrame) {
     val model = lr.fit(training)
 
     // get candidates' score and sort them
-    val featWithScores = training.columns
-      .zip(model.coefficients.toArray)
+    val featWithScores = allFeatDF.select("feature").collect().map(_.getString(0))
+      .zip(model.coefficients.toArray.map(math.abs))
       .filter(x => candidateNames.contains(x._1))
       .sortBy(_._2)(Ordering.Double.reverse)
 

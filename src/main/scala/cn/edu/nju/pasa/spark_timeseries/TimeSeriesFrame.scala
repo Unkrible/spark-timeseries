@@ -107,7 +107,6 @@ object TimeSeriesFrame {
     * @return row-based data for ML
     */
   def makeFeatureDF(timeSeriesDF: DataFrame, ss: SparkSession): DataFrame = {
-    // TODO: translate timerSeriesDF to row-based data for training of LR
     val vecLabelRdd = timeSeriesDF.select("value", "label").rdd
     val trainRDD = vecLabelRdd.zipWithIndex().flatMap { case (r, rowIdx) =>
       val vec = r.getAs[Vector](0).toArray
