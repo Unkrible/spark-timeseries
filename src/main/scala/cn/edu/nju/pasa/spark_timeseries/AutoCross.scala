@@ -51,6 +51,7 @@ class AutoCross(val ss: SparkSession, val timeSeriesDF: TimeSeriesFrame) {
 
   private def evaluateCandidates(candidates: Array[Feature], k: Int=1): Array[Feature] = {
     val candidateNames = candidates.map(_.toString)
+    println("======Candidates(" + candidateNames.length + "): " + candidateNames.mkString(" "))
     val prevFeatDf = timeSeriesDF.getTimeSeriesDfByFeatures(featureSets.toArray)
     val curFeatDf = timeSeriesDF.getTimeSeriesDfByFeatures(candidates)
 
@@ -68,7 +69,7 @@ class AutoCross(val ss: SparkSession, val timeSeriesDF: TimeSeriesFrame) {
       .filter(x => candidateNames.contains(x._1))
       .sortBy(_._2)(Ordering.Double.reverse)
 
-    print("======" + featWithScores.mkString(" "))
+    print("======Scores" + featWithScores.mkString(" "))
 
     // get top k feature
     val topk = if (k > featWithScores.length) featWithScores.length else k
