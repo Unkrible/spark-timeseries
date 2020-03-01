@@ -22,6 +22,15 @@ class TimeSeriesFrame(val rawDataDF: DataFrame, val ss: SparkSession) {
   }
 
   /***
+    * Translate timerSeriesDF to row-based data for training of LR
+    * @param timeSeriesDF (0: key, 1: value, 2: label)
+    * @return row-based data
+    */
+  def makeFeatureDF(timeSeriesDF: DataFrame): DataFrame = {
+    TimeSeriesFrame.makeFeatureDF(timeSeriesDF, ss)
+  }
+
+  /***
     * Get all feature names
     * @return list of feature names
     */
@@ -41,7 +50,7 @@ class TimeSeriesFrame(val rawDataDF: DataFrame, val ss: SparkSession) {
 
   def getTimeSeriesVecByFeatureName(name: String): Vector = {
     val vec = timeSeriesDF.where("feature = '" + name + "'")
-      .select("vector").collect()
+      .select("value").collect()
       .last.getAs[Vector](0)
 
     vec
@@ -72,20 +81,20 @@ class TimeSeriesFrame(val rawDataDF: DataFrame, val ss: SparkSession) {
 object TimeSeriesFrame {
   /***
     * Translate raw data to column-based data frame
-    * @param rawDataDF (0: datetime, 1: key, 2: value)
+    * @param rawDataDF (0: datetime, 1: key, 2: value, 3: label)
     * @return column-based data
     */
   def makeTimeSeriesDF(rawDataDF: DataFrame, ss: SparkSession): DataFrame = {
     // original data
-    // (0: Datetime, 1: Key, 2: Value)
+    // (0: Datetime, 1: Key, 2: Value, 3: Label)
     val timeseriesRdd = rawDataDF.rdd
-      .map(x => (x.getString(1), List((x.getLong(0), x.getDouble(2)))))
+      .map(x => (x.getString(1), List((x.getLong(0), x.getDouble(2), x.getDouble(3)))))
       .reduceByKey((x, y) => x ++ y)
       .map(x => (x._1, x._2.sortBy(_._1)))
-      .map(x => (x._1, Vectors.dense(x._2.map(_._2).toArray)))
+      .map(x => (x._1, Vectors.dense(x._2.map(_._2).toArray), Vectors.dense(x._2.map(_._3).toArray)))
 
     // column-based data
-    val timeseriesDF = ss.createDataFrame(timeseriesRdd).toDF("feature", "vector")
+    val timeseriesDF = ss.createDataFrame(timeseriesRdd).toDF("feature", "value", "label")
       .persist(StorageLevel.MEMORY_AND_DISK_SER)
 
     timeseriesDF
@@ -93,12 +102,27 @@ object TimeSeriesFrame {
 
   /***
     * Translate time series data to row-based data frame
-    * @param timeSeriesDF (feature=name+ops: String, vector: Vector)
+    * @param timeSeriesDF (feature=name+ops: String, value: Vector, label: Vector)
     * @param ss: spark session
     * @return row-based data for ML
     */
   def makeFeatureDF(timeSeriesDF: DataFrame, ss: SparkSession): DataFrame = {
     // TODO: translate timerSeriesDF to row-based data for training of LR
-    timeSeriesDF
+    val vecLabelRdd = timeSeriesDF.select("value", "label").rdd
+    val trainRDD = vecLabelRdd.zipWithIndex().flatMap { case (r, rowIdx) =>
+      val vec = r.getAs[Vector](0).toArray
+      val label = r.getAs[Vector](1).toArray
+      vec.zipWithIndex.map { case (v, colIdx) =>
+        (colIdx, List((rowIdx, v, label(colIdx))))
+      }
+    }.reduceByKey((x, y) => x ++ y).map(x => x._2.sortBy(_._1)).map{r =>
+      val feas = Vectors.dense(r.map(_._2).toArray)
+      val label = r.last._3
+      (label, feas)
+    }
+
+    val df = ss.createDataFrame(trainRDD).toDF("label", "features")
+
+    df
   }
 }

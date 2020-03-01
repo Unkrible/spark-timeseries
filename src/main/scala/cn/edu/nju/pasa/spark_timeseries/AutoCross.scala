@@ -24,13 +24,14 @@ class AutoCross(val ss: SparkSession, val timeSeriesDF: TimeSeriesFrame) {
       val newFeaWithVec = lastDF.rdd.flatMap { r =>
         val feat = r.getAs[String](0)
         val vec = r.getAs[Vector](1)
-        ops.map((feat, _, vec))
+        val label = r.getAs[Vector](2)
+        ops.map((feat, _, vec, label))
       }.map(x =>
         {
-          val (feat, opName, vec) = x
+          val (feat, opName, vec, label) = x
           val (name, ops) = Feature.parseFeat(feat)
           val newOps = ops ++ List(opName)
-          (Feature.getFeatName(name, newOps), TimeSeriesUtils.doOp(opName, vec))
+          (Feature.getFeatName(name, newOps), TimeSeriesUtils.doOp(opName, vec), label)
         }
       ).cache()
 
@@ -38,7 +39,7 @@ class AutoCross(val ss: SparkSession, val timeSeriesDF: TimeSeriesFrame) {
       val candidates = newFeaWithVec.map(_._1).collect().map(new Feature(_))
       // add new df to time series df
       val tempRdd = newFeaWithVec
-      val df = ss.createDataFrame(tempRdd).toDF("feature", "vector")
+      val df = ss.createDataFrame(tempRdd).toDF("feature", "vector", "label")
       timeSeriesDF.addTimeSeriesDF(df)
 
       // evaluate
@@ -66,6 +67,8 @@ class AutoCross(val ss: SparkSession, val timeSeriesDF: TimeSeriesFrame) {
       .zip(model.coefficients.toArray)
       .filter(x => candidateNames.contains(x._1))
       .sortBy(_._2)(Ordering.Double.reverse)
+
+    print("======" + featWithScores.mkString(" "))
 
     // get top k feature
     val topk = if (k > featWithScores.length) featWithScores.length else k
