@@ -5,14 +5,14 @@ import org.apache.spark.ml.linalg.{Vector, Vectors}
 object TimeSeriesUtils {
   private val opList = Array(
     "roll",
-//    "aggregateOnChunks",
-//    "cidCE",
-//    "meanChange",
-//    "meanSecondDerivativeCentral",
-//    "absoluteSumOfChanges",
-//    "longestStrikeAboveMean",
-//    "timeReversalAsymmetryStatistic",
-//    "c3",
+    "aggregateOnChunks",
+    "cidCE",
+    "meanChange",
+    "meanSecondDerivativeCentral",
+    "absoluteSumOfChanges",
+    "longestStrikeAboveMean",
+    "timeReversalAsymmetryStatistic",
+    "c3",
     "diff"
   )
 
